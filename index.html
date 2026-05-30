@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PairLink - WhatsApp Tester</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    body { background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%); }
+    .card { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); }
+  </style>
+</head>
+<body class="min-h-screen text-white p-6">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-5xl font-bold text-center text-green-500 mb-2">PairLink</h1>
+    <p class="text-center text-gray-400 mb-10">WhatsApp Pairing Code Tester</p>
+
+    <div class="card rounded-3xl p-8 border border-gray-700">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-gray-300 mb-2">Server URL</label>
+          <input id="serverUrl" type="text" value="https://mini-new1-469dc7443cc1.herokuapp.com" 
+                 class="w-full p-4 bg-slate-900 border border-slate-600 rounded-2xl text-lg">
+        </div>
+
+        <div>
+          <label class="block text-gray-300 mb-2">Phone Number</label>
+          <input id="phoneNumber" type="text" placeholder="923001234567" 
+                 class="w-full p-4 bg-slate-900 border border-slate-600 rounded-2xl text-lg">
+        </div>
+
+        <div>
+          <label class="block text-gray-300 mb-2">Number of Requests</label>
+          <input id="requestCount" type="number" value="5" min="1" max="10" 
+                 class="w-full p-4 bg-slate-900 border border-slate-600 rounded-2xl text-lg">
+        </div>
+
+        <button onclick="startPairing()" id="sendBtn"
+                class="w-full bg-green-600 hover:bg-green-700 py-5 rounded-2xl text-xl font-bold">
+          <span id="btnText">Start Sending Pairing Requests</span>
+        </button>
+
+        <div id="pairCodeBox" class="hidden p-6 bg-green-900/30 border border-green-500 rounded-2xl">
+          <p class="text-green-400">Latest Pairing Code:</p>
+          <p id="pairCode" class="text-4xl font-mono text-green-300 mt-2"></p>
+        </div>
+
+        <div>
+          <h3 class="mb-3 text-lg">Live Logs</h3>
+          <div id="logs" class="bg-slate-950 h-80 overflow-auto p-5 rounded-2xl font-mono text-sm border border-slate-700"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function startPairing() {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const phone = document.getElementById('phoneNumber').value.trim();
+      const count = parseInt(document.getElementById('requestCount').value);
+
+      if (!serverUrl || !phone) return alert("Server URL and Phone Number required!");
+
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      document.getElementById('btnText').textContent = "Processing...";
+
+      const logs = document.getElementById('logs');
+      logs.innerHTML = '';
+      document.getElementById('pairCodeBox').classList.add('hidden');
+
+      function addLog(msg, type='info') {
+        const time = new Date().toLocaleTimeString();
+        const color = type==='success' ? 'text-green-400' : type==='error' ? 'text-red-400' : 'text-gray-300';
+        logs.innerHTML += `<p class="${color}">[${time}] ${msg}</p>`;
+        logs.scrollTop = logs.scrollHeight;
+      }
+
+      addLog("🚀 Starting pairing requests...", "success");
+
+      for(let i=1; i<=count; i++) {
+        addLog(`📤 Sending request ${i}/${count}...`);
+        try {
+          const res = await fetch(`${serverUrl}/send-pair`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ number: phone })
+          });
+
+          const data = await res.json();
+          if(data.success && data.code) {
+            document.getElementById('pairCode').textContent = data.code;
+            document.getElementById('pairCodeBox').classList.remove('hidden');
+            addLog(`✅ Success - Code: ${data.code}`, "success");
+          } else {
+            addLog(`❌ Failed: ${data.message || "No code"}`, "error");
+          }
+        } catch(e) {
+          addLog(`❌ Network Error - Check your backend`, "error");
+        }
+        await new Promise(r => setTimeout(r, 4000));
+      }
+
+      addLog("🏁 All requests finished.", "success");
+      btn.disabled = false;
+      document.getElementById('btnText').textContent = "Start Sending Pairing Requests";
+    }
+  </script>
+</body>
+</html>
