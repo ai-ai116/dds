@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 // ==================== MongoDB Connection ====================
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://erfanx:erfanx@cluster0.k0m6dn2.mongodb.net/?appName=Cluster0/whatsapp-pair
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://erfanx:erfanx@cluster0.k0m6dn2.mongodb.net/whatsapp-pair
 PORT=3000';
 
 mongoose.connect(MONGO_URI)
