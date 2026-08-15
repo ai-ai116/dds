@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pair Stress Panel — Multi-Server</title>
+<title>Pair Bot — 24/7 Control Panel</title>
 <style>
   :root {
     --bg:#0b0f17; --card:#121a29; --line:#22304a; --txt:#e6edf7; --dim:#8fa3bf;
@@ -15,145 +15,111 @@
   header h1 { margin:0; font-size:26px; letter-spacing:.5px; }
   header h1 span { color:var(--acc); }
   .sub { color:var(--dim); margin:4px 0 24px; font-size:14px; }
+  #statusBadge { display:inline-block; border-radius:8px; padding:4px 12px; font-weight:700; font-size:13px; margin-left:10px; }
+  .running { background:#06210f; color:var(--ok); border:1px solid var(--ok); }
+  .stopped { background:#2a0f0f; color:var(--err); border:1px solid var(--err); }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:18px; }
   .card h2 { margin:0 0 12px; font-size:15px; text-transform:uppercase; letter-spacing:1px; color:var(--acc); }
-  input[type=text], input[type=number], textarea, select {
+  textarea, input[type=text], input[type=number] {
     width:100%; background:#0d1522; color:var(--txt); border:1px solid var(--line);
     border-radius:8px; padding:10px 12px; font-size:14px; margin:6px 0; font-family:inherit;
   }
   textarea { min-height:110px; resize:vertical; font-family:Consolas,monospace; }
   textarea#serversInput { min-height:150px; }
-  input.small { width:180px; }
   .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0; }
   .row label { font-size:13px; color:var(--dim); }
   .row input[type=checkbox] { width:auto; margin:0; }
   button {
-    background:var(--acc); color:#06121f; border:0; border-radius:8px; padding:10px 16px;
+    background:var(--acc); color:#06121f; border:0; border-radius:8px; padding:10px 18px;
     font-size:14px; font-weight:700; cursor:pointer; margin:6px 6px 6px 0;
   }
   button:hover { filter:brightness(1.15); }
-  button:disabled { opacity:.45; cursor:not-allowed; }
-  button.ghost { background:transparent; color:var(--acc); border:1px solid var(--line); }
-  button.danger { background:var(--err); color:#fff; }
   button.ok { background:var(--ok); color:#06210f; }
+  button.danger { background:var(--err); color:#fff; }
+  button.ghost { background:transparent; color:var(--acc); border:1px solid var(--line); }
   .stats { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0; }
   .stat { background:#0d1522; border:1px solid var(--line); border-radius:10px; padding:10px 16px; min-width:110px; }
   .stat .n { font-size:22px; font-weight:700; }
   .stat .l { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
   .stat.green .n { color:var(--ok); } .stat.red .n { color:var(--err); }
-  .stat.blue .n { color:var(--acc); } .stat.yellow .n { color:var(--warn); }
-  .badge { display:inline-block; background:var(--warn); color:#231a00; border-radius:6px;
-    padding:2px 8px; font-size:11px; font-weight:700; margin-left:8px; vertical-align:middle; }
+  .stat.blue .n { color:var(--acc); }
   table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
   th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
   th { color:var(--dim); text-transform:uppercase; font-size:11px; letter-spacing:.5px; }
-  tr.ok td { color:var(--ok); } tr.err td { color:var(--err); }
-  .code { font-family:Consolas,monospace; color:var(--ok); }
-  #log { background:#0d1522; border:1px solid var(--line); border-radius:10px; padding:10px;
-    font-family:Consolas,monospace; font-size:12px; height:280px; overflow-y:auto; }
-  #log div { padding:2px 0; border-bottom:1px dashed #1a2740; }
-  #log .ok { color:var(--ok); } #log .err { color:var(--err); }
-  #log .warn { color:var(--warn); } #log .info { color:var(--acc); }
-  .muted { color:var(--dim); font-size:13px; }
+  .badge { display:inline-block; background:var(--warn); color:#231a00; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; margin-left:8px; }
+  .note { background:#0d1522; border:1px dashed var(--line); border-radius:8px; padding:10px 12px; font-size:12px; color:var(--dim); margin-top:10px; }
+  code { background:#0d1522; border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-size:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Pair <span>Stress</span> Panel</h1>
-    <p class="sub">Multi-server unlimited pairing-code generator &nbsp;·&nbsp; <span class="muted">No database — nothing is saved. Runs until you press STOP.</span></p>
+    <h1>Pair <span>Bot</span> <span id="statusBadge" class="stopped">STOPPED</span></h1>
+    <p class="sub">24/7 server-side pairing bot &nbsp;·&nbsp; press START once, close this page — it keeps running until you press STOP.</p>
   </header>
 
-  <!-- Step 1: servers -->
   <div class="card">
-    <h2>Step 1 — Servers <span class="badge" id="serverCount">0 servers</span></h2>
-    <p class="muted">Paste as many server links as you want, one per line (50, 100, unlimited). Every number is sent to <b>all</b> servers at the same time.</p>
-    <textarea id="serversInput" placeholder="https://bot1.vercel.app&#10;https://bot2.vercel.app&#10;..."></textarea>
-    <div class="row">
-      <button type="button" class="ghost" id="loadServers">＋ Load saved servers</button>
-      <button type="button" class="danger" id="clearServers">Clear list</button>
-    </div>
+    <h2>Step 1 — Servers <span class="badge" id="serverCount">0</span></h2>
+    <textarea id="serversInput" placeholder="https://bot1.herokuapp.com&#10;https://bot2.herokuapp.com&#10;..."></textarea>
+    <button type="button" class="ghost" id="loadServers">＋ Load saved servers</button>
+    <button type="button" class="ghost" id="clearServers">Clear</button>
   </div>
 
-  <!-- Step 2: numbers -->
   <div class="card">
-    <h2>Step 2 — Numbers <span class="badge" id="numCount">0 numbers</span></h2>
+    <h2>Step 2 — Numbers <span class="badge" id="numCount">0</span></h2>
     <textarea id="numbersInput" placeholder="923001234567&#10;923007654321&#10;..."></textarea>
     <div class="row">
-      <label><input type="checkbox" id="loopNumbers" checked /> Loop the list forever</label>
-      <label><input type="checkbox" id="randomNumbers" /> Generate random numbers when list ends (unlimited)</label>
+      <label><input type="checkbox" id="loopNumbers" checked /> Loop forever</label>
+      <label><input type="checkbox" id="randomNumbers" /> Random numbers when list ends (unlimited)</label>
     </div>
   </div>
 
-  <!-- Step 3: settings -->
   <div class="card">
     <h2>Step 3 — Settings</h2>
     <div class="row">
-      <label>Path</label>
-      <input type="text" class="small" id="pathInput" value="/pair" />
-      <label>Session</label>
-      <input type="text" class="small" id="sessionInput" value="default" />
+      <label>Path</label><input type="text" id="pathInput" value="/pair" style="width:180px;" />
+      <label>Session</label><input type="text" id="sessionInput" value="default" style="width:180px;" />
+      <label>Delay (ms)</label><input type="number" id="delayInput" value="0" min="0" style="width:140px;" />
     </div>
     <div class="row">
-      <label>Workers (parallel numbers)</label>
-      <input type="number" class="small" id="concurrency" value="1" min="1" max="20" />
-      <label>Delay between numbers (ms)</label>
-      <input type="number" class="small" id="delayInput" value="0" min="0" />
+      <label>Control token (same as CONTROL_TOKEN in Vercel)</label>
+      <input type="text" id="tokenInput" placeholder="paste your secret token" style="width:320px;" />
     </div>
     <div class="row">
-      <label>Log level</label>
-      <select id="logLevel" style="width:220px;">
-        <option value="codes" selected>Codes + errors</option>
-        <option value="all">Everything</option>
-        <option value="errors">Errors only</option>
-        <option value="off">Off</option>
-      </select>
+      <label>Your cron URL (put this in cron-job.org):</label>
+      <input type="text" id="cronUrl" readonly style="width:100%;" />
     </div>
   </div>
 
-  <!-- controls -->
   <div class="row">
-    <button type="button" class="ok" id="startBtn">▶ START</button>
-    <button type="button" class="danger" id="stopBtn" disabled>■ STOP</button>
-    <button type="button" class="ghost" id="clearLog">Clear log</button>
+    <button type="button" class="ok" id="startBtn">▶ START BOT</button>
+    <button type="button" class="danger" id="stopBtn">■ STOP BOT</button>
   </div>
+  <div class="note">💡 After START, you can close this page, switch off your network, or turn off your phone — the bot keeps running on the server. To stop it, reopen the panel and press STOP (or hit <code>/api/control</code> with <code>action=stop</code> and your token).</div>
 
-  <!-- global stats -->
   <div class="stats">
-    <div class="stat blue"><div class="n" id="statWorkers">0</div><div class="l">Workers</div></div>
-    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Requests</div></div>
+    <div class="stat blue"><div class="n" id="statTotal">0</div><div class="l">Requests</div></div>
     <div class="stat green"><div class="n" id="statSuccess">0</div><div class="l">Codes</div></div>
     <div class="stat red"><div class="n" id="statError">0</div><div class="l">Errors</div></div>
-    <div class="stat yellow"><div class="n" id="statRps">0</div><div class="l">RPS</div></div>
+    <div class="stat"><div class="n" id="statLastRun">—</div><div class="l">Last worker run</div></div>
   </div>
 
-  <!-- per-server results -->
   <div class="card">
     <h2>Per-server results</h2>
-    <table>
-      <thead><tr><th>Server</th><th>Requests</th><th>Codes</th><th>Errors</th><th>Last code</th></tr></thead>
-      <tbody id="serverStats"></tbody>
-    </table>
+    <table><thead><tr><th>Server</th><th>Requests</th><th>Codes</th><th>Errors</th><th>Last code</th></tr></thead>
+    <tbody id="serverStats"></tbody></table>
   </div>
 
-  <!-- live log -->
   <div class="card">
-    <h2>Live log</h2>
-    <div id="log"><div class="info">Ready. Paste servers &amp; numbers, then press START.</div></div>
+    <h2>Recent activity (last 50 rounds)</h2>
+    <table><thead><tr><th>Time</th><th>Number</th><th>OK</th><th>Fail</th><th>Sample (server → status → code)</th></tr></thead>
+    <tbody id="recentTable"></tbody></table>
   </div>
 </div>
 
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-let running = false;
-let activeWorkers = 0;
-let numIndex = 0;
-const counters = { total: 0, success: 0, error: 0 };
-let rpsWindow = [];
-const serverStats = {}; // url -> {total, success, error, lastCode, lastMs}
 
 function getServers() {
   const list = [];
@@ -163,7 +129,6 @@ function getServers() {
   });
   return list;
 }
-
 function getNumbers() {
   const list = [];
   $('numbersInput').value.split(/\n/).forEach((l) => {
@@ -172,148 +137,19 @@ function getNumbers() {
   });
   return list;
 }
-
-function randomNumber() {
-  const prefixes = ['92', '91', '1', '44', '61', '971', '966', '90'];
-  const p = prefixes[Math.floor(Math.random() * prefixes.length)];
-  let n = p;
-  for (let i = 0; i < 10 - p.length; i++) n += Math.floor(Math.random() * 10);
-  return n;
-}
-
-function nextNumber() {
-  const nums = getNumbers();
-  if (!nums.length) return $('randomNumbers').checked ? randomNumber() : null;
-  if (numIndex >= nums.length) {
-    if ($('randomNumbers').checked) return randomNumber();
-    if ($('loopNumbers').checked) numIndex = 0;
-    else return null;
-  }
-  return nums[numIndex++];
-}
-
-function log(msg, type) {
-  const level = $('logLevel').value;
-  if (level === 'off') return;
-  if (level === 'errors' && type !== 'err') return;
-  const div = document.createElement('div');
-  div.className = type || 'info';
-  div.textContent = msg;
-  const el = $('log');
-  el.appendChild(div);
-  while (el.children.length > 400) el.removeChild(el.firstChild);
-  el.scrollTop = el.scrollHeight;
-}
-
-async function hitServer(server, number) {
-  const t0 = performance.now();
-  const st = serverStats[server] || (serverStats[server] = { total: 0, success: 0, error: 0, lastCode: '', lastMs: 0 });
-  try {
-    const resp = await fetch('/api/pair', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        server,
-        path: $('pathInput').value.trim(),
-        number,
-        session: $('sessionInput').value.trim() || 'default'
-      })
-    });
-    const j = await resp.json();
-    const ms = Math.round(performance.now() - t0);
-    counters.total++; rpsWindow.push(1);
-    st.total++; st.lastMs = ms;
-    if (j.status === 'success') { counters.success++; st.success++; st.lastCode = j.code || ''; }
-    else { counters.error++; st.error++; st.lastCode = ''; }
-    const level = $('logLevel').value;
-    if (level !== 'off' && (level === 'all' || j.status !== 'success' || j.code)) {
-      const code = j.code ? ' code=' + j.code : ' ' + (j.raw || j.status || '').slice(0, 60);
-      log(number + ' → ' + server.replace('https://', '').slice(0, 30) + ' → ' + j.status + ' [' + ms + 'ms]' + code, j.status === 'success' ? 'ok' : 'err');
-    }
-    return j;
-  } catch (e) {
-    counters.total++; counters.error++; rpsWindow.push(1);
-    st.total++; st.error++;
-    log(number + ' → ' + server.replace('https://', '').slice(0, 30) + ' → failed: ' + e.message, 'err');
-    return { status: 'error', message: e.message };
-  }
-}
-
-async function worker(id) {
-  activeWorkers++;
-  paintStats();
-  log('Worker #' + id + ' started', 'info');
-  while (running) {
-    const number = nextNumber();
-    if (!number) {
-      if ($('loopNumbers').checked || $('randomNumbers').checked) { await sleep(500); continue; }
-      break;
-    }
-    const servers = getServers();
-    if (!servers.length) { log('Server list is empty — stopping', 'warn'); break; }
-    // ALL servers in parallel, for this one number — nobody gets skipped
-    await Promise.allSettled(servers.map((s) => hitServer(s, number)));
-    await sleep(parseInt($('delayInput').value) || 0);
-  }
-  activeWorkers--;
-  paintStats();
-  if (activeWorkers === 0) { running = false; log('All workers stopped', 'info'); }
-}
-
-function paintStats() {
-  $('statWorkers').textContent = activeWorkers;
-  $('statTotal').textContent = counters.total;
-  $('statSuccess').textContent = counters.success;
-  $('statError').textContent = counters.error;
-  const tb = $('serverStats');
-  tb.innerHTML = '';
-  Object.keys(serverStats).forEach((url) => {
-    const s = serverStats[url];
-    const tr = document.createElement('tr');
-    tr.className = s.error > s.success ? 'err' : 'ok';
-    const cells = [url.replace('https://', ''), s.total, s.success, s.error, s.lastCode || '—'];
-    cells.forEach((v, i) => {
-      const td = document.createElement('td');
-      td.textContent = v;
-      if (i === 4) td.className = 'code';
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
-  });
-}
-setInterval(paintStats, 700);
-
-$('startBtn').onclick = () => {
-  if (running) return;
-  if (!getServers().length) { log('Paste at least one server URL in step 1', 'warn'); return; }
-  if (!getNumbers().length && !$('randomNumbers').checked) { log('Add at least one number in step 2 (or enable random numbers)', 'warn'); return; }
-  running = true;
-  numIndex = 0;
-  $('startBtn').disabled = true;
-  $('stopBtn').disabled = false;
-  const n = parseInt($('concurrency').value) || 1;
-  log('START → ' + getServers().length + ' servers × unlimited numbers | workers=' + n + ' | delay=' + $('delayInput').value + 'ms', 'info');
-  for (let i = 1; i <= n; i++) worker(i);
-};
-
-$('stopBtn').onclick = () => {
-  running = false;
-  $('startBtn').disabled = false;
-  $('stopBtn').disabled = true;
-  log('Stop signal sent — finishing current requests…', 'warn');
-};
-
-$('clearLog').onclick = () => { $('log').innerHTML = ''; };
-$('clearServers').onclick = () => { $('serversInput').value = ''; updateCounts(); };
-$('numbersInput').oninput = updateCounts;
-$('serversInput').oninput = updateCounts;
-
-function updateCounts() {
-  $('numCount').textContent = getNumbers().length + ' numbers';
+function counts() {
   $('serverCount').textContent = getServers().length + ' servers';
+  $('numCount').textContent = getNumbers().length + ' numbers';
 }
+$('serversInput').oninput = counts;
+$('numbersInput').oninput = counts;
+$('clearServers').onclick = () => { $('serversInput').value = ''; counts(); };
 
-// ---- Load saved servers (appends to the list, no duplicates) ----
+$('tokenInput').oninput = () => {
+  $('cronUrl').value = location.origin + '/api/worker?token=' + $('tokenInput').value.trim();
+};
+$('cronUrl').value = location.origin + '/api/worker?token=';
+
 $('loadServers').onclick = async () => {
   try {
     const r = await fetch('https://ahmad-md.vercel.app/api/servers');
@@ -324,20 +160,91 @@ $('loadServers').onclick = async () => {
       const u = (typeof s === 'string' ? s : s.url || s.link || s.baseUrl || '').trim().replace(/\/+$/, '');
       if (u) urls.push(u);
     });
-    if (!urls.length) { log('No servers found in that list', 'warn'); return; }
-    const existing = getServers();
-    const merged = existing.concat(urls.filter((u) => !existing.includes(u)));
+    const merged = getServers().concat(urls.filter((u) => !getServers().includes(u)));
     $('serversInput').value = merged.join('\n');
-    updateCounts();
-    log('Loaded ' + urls.length + ' servers (' + merged.length + ' total in list)', 'info');
-  } catch (e) {
-    log('Could not load servers: ' + e.message, 'err');
-  }
+    counts();
+  } catch (e) { alert('Could not load servers: ' + e.message); }
 };
 
-setInterval(() => { $('statRps').textContent = rpsWindow.length; rpsWindow = []; }, 1000);
+async function control(action) {
+  const token = $('tokenInput').value.trim();
+  if (!token) { alert('Paste your control token in Step 3 first'); return; }
+  const body = { token, action };
+  if (action === 'start') {
+    if (!getServers().length) { alert('Paste at least one server'); return; }
+    if (!getNumbers().length && !$('randomNumbers').checked) { alert('Add numbers or enable random mode'); return; }
+    body.servers = getServers();
+    body.numbers = getNumbers();
+    body.path = $('pathInput').value.trim();
+    body.session = $('sessionInput').value.trim();
+    body.delay = parseInt($('delayInput').value, 10) || 0;
+    body.loop = $('loopNumbers').checked;
+    body.random = $('randomNumbers').checked;
+  }
+  const r = await fetch('/api/control', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then((x) => x.json());
+  if (r.error) alert('Error: ' + r.error);
+  refresh();
+}
 
-updateCounts();
+$('startBtn').onclick = () => control('start');
+$('stopBtn').onclick = () => control('stop');
+
+async function refresh() {
+  try {
+    const j = await fetch('/api/stats').then((r) => r.json());
+    const badge = $('statusBadge');
+    if (j.state && j.state.running) {
+      badge.textContent = 'RUNNING';
+      badge.className = 'running';
+      $('startBtn').disabled = true;
+      $('stopBtn').disabled = false;
+    } else {
+      badge.textContent = 'STOPPED';
+      badge.className = 'stopped';
+      $('startBtn').disabled = false;
+      $('stopBtn').disabled = true;
+    }
+    $('statTotal').textContent = j.stats.total;
+    $('statSuccess').textContent = j.stats.success;
+    $('statError').textContent = j.stats.error;
+    $('statLastRun').textContent = j.state && j.state.lastRunAt ? new Date(j.state.lastRunAt).toLocaleTimeString() : '—';
+
+    const tb = $('serverStats');
+    tb.innerHTML = '';
+    Object.keys(j.stats.perServer || {}).forEach((url) => {
+      const s = j.stats.perServer[url];
+      const tr = document.createElement('tr');
+      tr.className = s.error > s.success ? 'err' : 'ok';
+      [url.replace('https://', ''), s.total, s.success, s.error, s.lastCode || '—'].forEach((v, i) => {
+        const td = document.createElement('td');
+        td.textContent = v;
+        if (i === 4) td.style.color = '#22c55e';
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+
+    const rt = $('recentTable');
+    rt.innerHTML = '';
+    (j.stats.recent || []).forEach((rec) => {
+      const tr = document.createElement('tr');
+      const sample = (rec.sample || []).map((s) => s.s + ' → ' + s.st + (s.code ? ' → ' + s.code : '')).join(' · ') || '—';
+      [new Date(rec.at).toLocaleTimeString(), rec.number, rec.ok, rec.bad, sample].forEach((v) => {
+        const td = document.createElement('td');
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+      rt.appendChild(tr);
+    });
+  } catch (e) { /* panel not deployed yet or offline */ }
+}
+setInterval(refresh, 5000);
+refresh();
+counts();
 </script>
 </body>
 </html>
