@@ -1,6 +1,6 @@
 {
-  "name": "pair-stress-panel",
-  "version": "1.0.0",
+  "name": "pair-bot",
+  "version": "3.0.0",
   "private": true,
   "dependencies": {
     "mongodb": "^6.8.0"
