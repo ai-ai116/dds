@@ -1,15 +1,11 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/control.js", "use": "@vercel/node" },
-    { "src": "api/worker.js", "use": "@vercel/node" },
-    { "src": "api/stats.js", "use": "@vercel/node" },
+    { "src": "api/pair.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/control", "dest": "/api/control.js" },
-    { "src": "/api/worker", "dest": "/api/worker.js" },
-    { "src": "/api/stats", "dest": "/api/stats.js" },
+    { "src": "/api/pair", "dest": "/api/pair.js" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
