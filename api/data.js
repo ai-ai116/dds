@@ -1,7 +1,7 @@
 // api/data.js — GET saved records / stats, DELETE clears the collection
 const { MongoClient } = require('mongodb');
 
-const MONGODB_URI = process.env.MONGODB_URI || '';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://dreammini:dreammini@cluster0.drhitpk.mongodb.net/?appName=Cluster0';
 const MONGODB_DB = process.env.MONGODB_DB || 'pair_panel';
 
 let cached = globalThis._mongo;
