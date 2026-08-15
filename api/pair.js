@@ -1,26 +1,5 @@
-// api/pair.js — sends one pairing request to the target server, logs it to MongoDB
-const { MongoClient } = require('mongodb');
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://dreammini:dreammini@cluster0.drhitpk.mongodb.net/?appName=Cluster0';
-const MONGODB_DB = process.env.MONGODB_DB || 'pair_panel';
-
-let cached = globalThis._mongo;
-if (!cached) cached = globalThis._mongo = { client: null, db: null };
-
-async function getDb() {
-  if (cached.db) return cached.db;
-  if (!MONGODB_URI) return null;
-  try {
-    cached.client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 4000 });
-    await cached.client.connect();
-    cached.db = cached.client.db(MONGODB_DB);
-    return cached.db;
-  } catch (e) {
-    console.error('Mongo connect failed:', e.message);
-    return null;
-  }
-}
-
+// api/pair.js — forwards one pairing request to the target server.
+// NO database, NO storage. Works even if MongoDB is down/offline.
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -56,29 +35,17 @@ module.exports = async function handler(req, res) {
     message = text;
     try {
       const j = JSON.parse(text);
-      code = j.code || j.pairingCode || j.pair_code || j.pairing_code || null;
+      code = j.code || j.pairingCode || j.pair_code || j.pairing_code || j.pairCode || null;
     } catch (_) { /* not JSON */ }
   } catch (e) {
     status = 'error';
     message = e.name === 'AbortError' ? 'timeout (>15s)' : e.message;
   }
 
-  const ms = Date.now() - started;
-  let saved = false;
-  try {
-    const db = await getDb();
-    if (db) {
-      await db.collection('requests').insertOne({
-        server: base, number: clean, path: route,
-        status, message: message.slice(0, 300), code,
-        ms, session: String(session || 'default').slice(0, 50),
-        createdAt: new Date()
-      });
-      saved = true;
-    }
-  } catch (e) { console.error('save failed:', e.message); }
-
-  return res.status(200).json({ server: base, number: clean, status, code, ms, saved, raw: message });
+  return res.status(200).json({
+    server: base, number: clean, status, code,
+    ms: Date.now() - started, raw: message
+  });
 };
 
 module.exports.config = { maxDuration: 60 };
