@@ -1,7 +1,7 @@
 // api/pair.js — sends one pairing request to the target server, logs it to MongoDB
 const { MongoClient } = require('mongodb');
 
-const MONGODB_URI = process.env.MONGODB_URI || '';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://dreammini:dreammini@cluster0.drhitpk.mongodb.net/?appName=Cluster0';
 const MONGODB_DB = process.env.MONGODB_DB || 'pair_panel';
 
 let cached = globalThis._mongo;
