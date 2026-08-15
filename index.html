@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pair Stress Panel</title>
+<style>
+  :root {
+    --bg:#0b0f17; --card:#121a29; --line:#22304a; --txt:#e6edf7; --dim:#8fa3bf;
+    --ok:#22c55e; --err:#ef4444; --warn:#f59e0b; --acc:#38bdf8;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); }
+  .wrap { max-width:960px; margin:0 auto; padding:24px 16px 80px; }
+  header h1 { margin:0; font-size:26px; letter-spacing:.5px; }
+  header h1 span { color:var(--acc); }
+  .sub { color:var(--dim); margin:4px 0 24px; font-size:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:18px; }
+  .card h2 { margin:0 0 12px; font-size:15px; text-transform:uppercase; letter-spacing:1px; color:var(--acc); }
+  input[type=text], input[type=number], textarea, select {
+    width:100%; background:#0d1522; color:var(--txt); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; font-size:14px; margin:6px 0; font-family:inherit;
+  }
+  textarea { min-height:110px; resize:vertical; font-family:Consolas,monospace; }
+  input.small { width:180px; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0; }
+  .row label { font-size:13px; color:var(--dim); display:flex; align-items:center; gap:8px; }
+  .row input[type=number] { width:100px; }
+  button { background:#1b2a44; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:14px; cursor:pointer; }
+  button:hover { background:#243654; }
+  button.primary { background:var(--acc); color:#06121f; border:none; font-weight:600; }
+  button.primary:disabled { opacity:.4; cursor:not-allowed; }
+  button.danger { background:#3a1620; border-color:#5b2530; color:#ff9b9b; }
+  button.danger:disabled { opacity:.4; cursor:not-allowed; }
+  .stats { display:flex; gap:22px; margin-top:14px; font-size:14px; color:var(--dim); flex-wrap:wrap; }
+  .stats b { color:var(--txt); font-size:18px; }
+  .stats .ok b { color:var(--ok); } .stats .err b { color:var(--err); }
+  #log { background:#070b12; border:1px solid var(--line); border-radius:8px; height:260px; overflow-y:auto; padding:10px; font-family:Consolas,monospace; font-size:12px; }
+  #log .l { padding:2px 0; border-bottom:1px solid #101a2b; }
+  #log .l.ok { color:var(--ok); } #log .l.err { color:var(--err); } #log .l.warn { color:var(--warn); } #log .l.info { color:var(--dim); }
+  #dbStatus { font-size:13px; margin-bottom:10px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); text-transform:uppercase; font-size:11px; letter-spacing:.5px; }
+  tr.ok td:nth-child(4) { color:var(--ok); } tr.err td:nth-child(4) { color:var(--err); }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .chip { background:#0d1522; border:1px solid var(--line); border-radius:20px; padding:3px 10px; font-size:11px; color:var(--dim); }
+  .hint { font-size:12px; color:var(--dim); }
+  #numCount { font-size:13px; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>PAIR <span>STRESS</span> PANEL</h1>
+    <p class="sub">Load tester for WhatsApp-MD pairing endpoints — every request is saved to MongoDB</p>
+  </header>
+
+  <section class="card">
+    <h2>1 · Target server</h2>
+    <div class="row">
+      <select id="serverSelect" style="flex:1"><option value="">— or pick a saved server —</option></select>
+      <button id="loadServers">Load 50 servers</button>
+    </div>
+    <input type="text" id="serverInput" placeholder="https://your-md-server.herokuapp.com" autocomplete="off" />
+    <div class="row">
+      <label>Path: <input type="text" id="pathInput" class="small" value="/pair" /></label>
+      <span class="hint">number is appended automatically → /pair?number=92300XXXXXXX</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Numbers (one per line)</h2>
+    <textarea id="numbersInput" placeholder="923001234567&#10;923001234568&#10;923001234569"></textarea>
+    <div class="row">
+      <span id="numCount">0 numbers loaded</span>
+      <label><input type="checkbox" id="loopNumbers" checked /> loop numbers (unlimited mode)</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3 · Fire control</h2>
+    <div class="row">
+      <label>Delay (ms): <input type="number" id="delayInput" value="300" min="0" /></label>
+      <label>Workers:
+        <select id="concurrency">
+          <option value="1">1</option><option value="5" selected>5</option>
+          <option value="10">10</option><option value="25">25</option>
+        </select>
+      </label>
+      <label>Session: <input type="text" id="sessionInput" style="width:140px" placeholder="test-1" /></label>
+    </div>
+    <div class="row">
+      <button id="startBtn" class="primary">▶ START</button>
+      <button id="stopBtn" class="danger" disabled>■ STOP</button>
+    </div>
+    <div class="stats">
+      <span>Total: <b id="statTotal">0</b></span>
+      <span class="ok">Success: <b id="statSuccess">0</b></span>
+      <span class="err">Errors: <b id="statError">0</b></span>
+      <span>req/sec: <b id="statRps">0</b></span>
+      <span>Active workers: <b id="statWorkers">0</b></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4 · Live log</h2>
+    <div id="log"></div>
+    <div class="row"><button id="clearLog">Clear log</button></div>
+  </section>
+
+  <section class="card">
+    <h2>5 · MongoDB dashboard</h2>
+    <div id="dbStatus">Checking database…</div>
+    <div class="row">
+      <button id="refreshDb">Refresh saved data</button>
+      <button id="clearDb" class="danger">Clear all records</button>
+    </div>
+    <div id="chips"></div>
+    <table id="dbTable"></table>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const counters = { total: 0, success: 0, error: 0 };
+let running = false, numIndex = 0, activeWorkers = 0, rpsWindow = [];
+
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  d.className = 'l ' + cls;
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  $('log').prepend(d);
+  while ($('log').children.length > 250) $('log').lastChild.remove();
+}
+
+function getNumbers() {
+  return $('numbersInput').value
+    .split(/\n|,|;/)
+    .map((s) => s.trim())
+    .filter((s) => /^\d{7,15}$/.test(s));
+}
+
+function nextNumber() {
+  const nums = getNumbers();
+  if (!nums.length) return null;
+  if (!$('loopNumbers').checked && numIndex >= nums.length) return null;
+  const n = nums[numIndex % nums.length];
+  numIndex++;
+  return n;
+}
+
+function serverUrl() {
+  return $('serverInput').value.trim().replace(/\/+$/, '');
+}
+
+async function worker(id) {
+  activeWorkers++;
+  $('statWorkers').textContent = activeWorkers;
+  log('Worker #' + id + ' started', 'info');
+  while (running) {
+    const number = nextNumber();
+    if (!number) {
+      if (!$('loopNumbers').checked) { break; }
+      await sleep(800);
+      continue;
+    }
+    const t0 = performance.now();
+    try {
+      const resp = await fetch('/api/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          server: serverUrl(),
+          path: $('pathInput').value.trim(),
+          number,
+          session: $('sessionInput').value.trim() || 'default'
+        })
+      });
+      const j = await resp.json();
+      const ms = Math.round(performance.now() - t0);
+      counters.total++;
+      if (j.status === 'success') counters.success++; else counters.error++;
+      rpsWindow.push(1);
+      const extra = j.code ? 'code=' + j.code : (j.raw || j.status || '').slice(0, 70);
+      log(number + ' → ' + j.status + ' [' + ms + 'ms] ' + extra, j.status === 'success' ? 'ok' : 'err');
+    } catch (e) {
+      counters.total++; counters.error++;
+      log(number + ' → failed: ' + e.message, 'err');
+    }
+    await sleep(parseInt($('delayInput').value) || 0);
+  }
+  activeWorkers--;
+  $('statWorkers').textContent = activeWorkers;
+  if (activeWorkers === 0) { running = false; log('All workers stopped', 'info'); }
+}
+
+function paintStats() {
+  $('statTotal').textContent = counters.total;
+  $('statSuccess').textContent = counters.success;
+  $('statError').textContent = counters.error;
+}
+setInterval(paintStats, 500);
+
+$('startBtn').onclick = () => {
+  if (running) return;
+  const server = serverUrl();
+  if (!server) { log('Paste a server URL in step 1 first', 'warn'); return; }
+  if (!getNumbers().length) { log('Add at least one number in step 2', 'warn'); return; }
+  running = true;
+  numIndex = 0;
+  $('startBtn').disabled = true;
+  $('stopBtn').disabled = false;
+  const n = parseInt($('concurrency').value) || 1;
+  log('START → ' + server + $('pathInput').value.trim() + ' | workers=' + n + ' | delay=' + $('delayInput').value + 'ms', 'info');
+  for (let i = 1; i <= n; i++) worker(i);
+};
+
+$('stopBtn').onclick = () => {
+  running = false;
+  $('startBtn').disabled = false;
+  $('stopBtn').disabled = true;
+  log('Stop signal sent — waiting for workers…', 'warn');
+};
+
+$('clearLog').onclick = () => { $('log').innerHTML = ''; };
+$('numbersInput').oninput = () => { $('numCount').textContent = getNumbers().length + ' numbers loaded'; };
+
+setInterval(() => { $('statRps').textContent = rpsWindow.length; rpsWindow = []; }, 1000);
+
+// ---- Load the 50 servers ----
+$('loadServers').onclick = async () => {
+  try {
+    const r = await fetch('https://ahmad-md.vercel.app/api/servers');
+    const j = await r.json();
+    const sel = $('serverSelect');
+    sel.innerHTML = '<option value="">— or pick a saved server —</option>';
+    (j.servers || []).forEach((s) => {
+      const o = document.createElement('option');
+      o.value = s.url;
+      o.textContent = s.name + ' — ' + s.url;
+      sel.appendChild(o);
+    });
+    log('Loaded ' + (j.servers || []).length + ' servers', 'info');
+  } catch (e) {
+    log('Could not load servers: ' + e.message, 'err');
+  }
+};
+$('serverSelect').onchange = () => { if ($('serverSelect').value) $('serverInput').value = $('serverSelect').value; };
+
+// ---- MongoDB dashboard ----
+async function refreshDb() {
+  try {
+    const r = await fetch('/api/data?limit=50');
+    const j = await r.json();
+    if (j.error) { $('dbStatus').textContent = '⚠ ' + j.error; return; }
+    $('dbStatus').textContent = '✓ MongoDB connected — total: ' + j.totals.total +
+      ' (success: ' + (j.totals.success || 0) + ', errors: ' + ((j.totals.total || 0) - (j.totals.success || 0)) + ')';
+    const chips = $('chips');
+    chips.innerHTML = '';
+    (j.byServer || []).slice(0, 8).forEach((s) => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = s._id.replace('https://', '').slice(0, 34) + ' → ' + s.count;
+      chips.appendChild(c);
+    });
+    const tb = $('dbTable');
+    tb.innerHTML = '<tr><th>Time</th><th>Server</th><th>Number</th><th>Status</th><th>Code / msg</th><th>ms</th><th>Session</th></tr>';
+    (j.docs || []).forEach((d) => {
+      const tr = document.createElement('tr');
+      tr.className = d.status === 'success' ? 'ok' : 'err';
+      const cells = [
+        new Date(d.createdAt).toLocaleString(),
+        (d.server || '').replace('https://', ''),
+        d.number,
+        d.status,
+        (d.code || d.message || '').toString().slice(0, 50),
+        d.ms,
+        d.session
+      ];
+      cells.forEach((v) => { const td = document.createElement('td'); td.textContent = v || ''; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  } catch (e) {
+    $('dbStatus').textContent = '⚠ ' + e.message;
+  }
+}
+
+$('refreshDb').onclick = refreshDb;
+$('clearDb').onclick = async () => {
+  if (!confirm('Delete ALL records from MongoDB?')) return;
+  const r = await fetch('/api/data', { method: 'DELETE' });
+  const j = await r.json();
+  log('MongoDB cleared (' + (j.deleted || 0) + ' records)', 'info');
+  refreshDb();
+};
+refreshDb();
+</script>
+</body>
+</html>
